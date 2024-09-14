@@ -27,6 +27,11 @@
 #    delay: 10
 #  connection: local
 
+- name: Reload facts
+  setup:
+    gather_subset:
+      - all
+
 - name: Debug playbook variables
   vars:
     msg: |
