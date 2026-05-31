@@ -1,3 +1,41 @@
-#SPDX-License-Identifier: MIT-0
+#SPDX-License-Identifier: MIT
 ---
-# defaults file for template-role
+# defaults file for vm-revert
+
+# Set this to the name of the machine on which the virtual machine is
+# running. Ideally set in the host_vars file for the virtual machine.
+vm_host: "{{ undef(hint='vm_host must be explicitly defined as the host on which the virtual machine is running') }}"
+
+# Set this to true ONLY IF you want the machine to be reverted back to a
+# snapshot, potentially losing data.
+#
+# CAUTION: I will repeat. Do not set this to true unless you know what you are
+# doing. And do not ever place it in a group_vars file. See README.md for more
+# details of how best to use this variable.
+vm_revert: false
+
+# The name of the previously created snapshot to revert to. This is the default
+# value used by `virt-manager` for the first snapshot. Ideally set in the
+# host_vars file for the virtual machine if it differs from the default.
+vm_revert_snapshot: "snapshot1"  
+
+# How long to delay in seconds before starting to check to see if the machine
+# has restarted. Unlikely to be needed, but provided for ease of overriding
+# should it ever become necessary.
+vm_wait_delay: 10
+
+# How long to keep trying in seconds after the delay before we consider the
+# restart to have failed. Unlikely to be needed, but provided for ease of
+# overriding should it ever become necessary.
+vm_wait_timeout: 90
+
+# Whether or not to regather facts after the restart. Default is `true`, since
+# if we revert to a snapshot, our previously gathered facts are now out-of-date.
+# It is unlikely that you will ever want to override this, but provided for ease
+# just in case.
+vm_regather_facts: true
+
+# Whether or not to do a debug display of the variables after re-gathering
+# them. This combines with a verbosity of 1 for just the host name to indicate
+# that they have been regathered, and 3 for a more complete display.
+vm_debug_variables: true

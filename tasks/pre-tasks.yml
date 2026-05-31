@@ -1,48 +1,53 @@
+#SPDX-License-Identifier: MIT
 ---
-# Sub-playbook to destroy and revert pell
+# Sub-playbook to destroy and revert a virtual machine
 
-- name: Destroy VMs
-  virt:
-    name: "{{inventory_hostname}}"
+- name: Destroy VM {{ inventory_hostname }}
+  community.libvirt.virt:
+    name: "{{ inventory_hostname }}"
     state: destroyed
-  delegate_to: r720
+  delegate_to: "{{ vm_host }}"
+  when: vm_revert | bool
 
-- name: Revert VMs from snapshot1
-  command: "virsh snapshot-revert {{inventory_hostname}} --snapshotname snapshot1"
-  delegate_to: r720
+- name: Revert VM {{ inventory_hostname }} from {{ vm_revert_snapshot }}
+  ansible.builtin.command: "virsh snapshot-revert {{ inventory_hostname }} --snapshotname '{{ vm_revert_snapshot }}'"
+  delegate_to: "{{ vm_host }}"
+  when: vm_revert | bool
 
-- name: Restart VM
-  virt:
-    name: "{{inventory_hostname}}"
+- name: Restart VM {{ inventory_hostname }}
+  community.libvirt.virt:
+    name: "{{ inventory_hostname }}"
     state: running
-  delegate_to: r720
+  delegate_to: "{{ vm_host }}"
+  when: vm_revert | bool
 
-- name: Wait for the machine to have rebooted.
-  wait_for_connection:
-    delay: 10
-    timeout: 90
+- name: Wait for {{ inventory_hostname }} to have rebooted.
+  ansible.builtin.wait_for_connection:
+    delay: {{ vm_wait_delay }}
+    timeout: {{ vm_wait_timeout }}
+  when: vm_revert | bool
 
-#    port: 22
-#    host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
-#    delay: 10
-#  connection: local
-
-- name: Reload facts
-  setup:
+- name: Reload facts for {{ inventory_hostname }}
+  ansible.builtin.setup:
     gather_subset:
       - all
+  when:
+    - vm_revert | bool
+    - vm_regather_facts | bool
 
-- name: Debug playbook variables
-  vars:
+- name: Debug playbook variables for {{ inventory_hostname }}
+  ansible.builtin.vars:
     msg: |
       Host name:                {{ inventory_hostname }}
 
-  debug:
+  ansible.builtin.debug:
     msg: "{{ msg.split('\n') }}"
     verbosity: 1
+  when:
+    - vm_debug_variables | bool
 
 - name: Debug variables as a whole
-  vars:
+  ansible.builtin.vars:
     msg: |
       Module Variables ("vars"):
        --------------------------------
@@ -64,6 +69,8 @@
        --------------------------------
        {{ hostvars | to_nice_json }}
 
-  debug:
+  ansible.builtin.debug:
     msg: "{{ msg.split('\n') }}"
-    verbosity: 4
+    verbosity: 3
+  when:
+    - vm_debug_variables | bool
