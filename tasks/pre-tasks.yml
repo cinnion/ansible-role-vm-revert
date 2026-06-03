@@ -1,76 +1,18 @@
-#SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: MIT
 ---
-# Sub-playbook to destroy and revert a virtual machine
+# Sub-playbook to potentially destroy and revert a virtual machine, based on
+# settings stored in variable files and on the command line.
+#
+# See README.md for the actual warnings, but consider yourself warned.
 
-- name: Destroy VM {{ inventory_hostname }}
-  community.libvirt.virt:
-    name: "{{ inventory_hostname }}"
-    state: destroyed
-  delegate_to: "{{ vm_host }}"
+- name: Reboot and revert to the snapshot {{ vm_revert_snapshot }}
+  ansible.builtin.include_tasks: do-revert.yml
   when: vm_revert | bool
 
-- name: Revert VM {{ inventory_hostname }} from {{ vm_revert_snapshot }}
-  ansible.builtin.command: "virsh snapshot-revert {{ inventory_hostname }} --snapshotname '{{ vm_revert_snapshot }}'"
-  delegate_to: "{{ vm_host }}"
-  when: vm_revert | bool
-
-- name: Restart VM {{ inventory_hostname }}
-  community.libvirt.virt:
-    name: "{{ inventory_hostname }}"
-    state: running
-  delegate_to: "{{ vm_host }}"
-  when: vm_revert | bool
-
-- name: Wait for {{ inventory_hostname }} to have rebooted.
-  ansible.builtin.wait_for_connection:
-    delay: {{ vm_wait_delay }}
-    timeout: {{ vm_wait_timeout }}
-  when: vm_revert | bool
-
-- name: Reload facts for {{ inventory_hostname }}
+- name: Reload facts
   ansible.builtin.setup:
     gather_subset:
       - all
   when:
     - vm_revert | bool
     - vm_regather_facts | bool
-
-- name: Debug playbook variables for {{ inventory_hostname }}
-  ansible.builtin.vars:
-    msg: |
-      Host name:                {{ inventory_hostname }}
-
-  ansible.builtin.debug:
-    msg: "{{ msg.split('\n') }}"
-    verbosity: 1
-  when:
-    - vm_debug_variables | bool
-
-- name: Debug variables as a whole
-  ansible.builtin.vars:
-    msg: |
-      Module Variables ("vars"):
-       --------------------------------
-       {{ vars | to_nice_json }}
-
-       Environment Variables ("environment"):
-       --------------------------------
-       {{ environment | to_nice_json }}
-
-       GROUP NAMES Variables ("group_names"):
-       --------------------------------
-       {{ group_names | to_nice_json }}
-
-       GROUPS Variables ("groups"):
-       --------------------------------
-       {{ groups | to_nice_json }}
-
-       HOST Variables ("hostvars"):
-       --------------------------------
-       {{ hostvars | to_nice_json }}
-
-  ansible.builtin.debug:
-    msg: "{{ msg.split('\n') }}"
-    verbosity: 3
-  when:
-    - vm_debug_variables | bool

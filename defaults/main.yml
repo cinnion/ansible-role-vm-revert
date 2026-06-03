@@ -1,23 +1,32 @@
-#SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: MIT
 ---
-# defaults file for vm-revert
+# defaults file for vm_revert
 
-# Set this to the name of the machine on which the virtual machine is
-# running. Ideally set in the host_vars file for the virtual machine.
-vm_host: "{{ undef(hint='vm_host must be explicitly defined as the host on which the virtual machine is running') }}"
+# This is the server acting as the host server for the virtual machine. Keeping
+# in mind the warning about the `vm_revert` variable, a perfect place for this
+# and other variables ***except for `vm_revert`*** is in the host_vars file for
+# the inventory item. Commands are delegated to this host for execution. The
+# actual default for this does supply a hint, but is not shown here for clarity.
+vmhost: "{{ undef(hint='vmhost must be explicitly defined as the host on which the virtual machine is running') }}"
 
-# Set this to true ONLY IF you want the machine to be reverted back to a
-# snapshot, potentially losing data.
+# Whether or not the VM guest should be rebooted and reverted to a snapshot
+# (rolled back). This is defaulted to false for a reason as a protection. Set to
+# true only if you know what you are doing.
 #
-# CAUTION: I will repeat. Do not set this to true unless you know what you are
-# doing. And do not ever place it in a group_vars file. See README.md for more
-# details of how best to use this variable.
+# CAUTION!  Do not enable this setting unless you want a virtual machine to
+# reboot and reverted back to a previously created snapshot. Because of the
+# nature of this variable, it ***should never be placed in a `group_vars`
+# file***. Indeed, it is strongly advised that it not be put in a `host_vars`
+# file or playbook either. See README.md for more details!
+#
+# You have been warned!!!
 vm_revert: false
 
-# The name of the previously created snapshot to revert to. This is the default
-# value used by `virt-manager` for the first snapshot. Ideally set in the
-# host_vars file for the virtual machine if it differs from the default.
-vm_revert_snapshot: "snapshot1"  
+# This is the name of the snapshot which will be used in the `virsh
+# snapshot-revert` command, which is in fact the default name the first time you
+# create a snapshot using `virt-manager`. Ideally set in the host_vars file for
+# the virtual machine if it differs from the default.
+vm_revert_snapshot: "snapshot1"
 
 # How long to delay in seconds before starting to check to see if the machine
 # has restarted. Unlikely to be needed, but provided for ease of overriding
@@ -34,8 +43,3 @@ vm_wait_timeout: 90
 # It is unlikely that you will ever want to override this, but provided for ease
 # just in case.
 vm_regather_facts: true
-
-# Whether or not to do a debug display of the variables after re-gathering
-# them. This combines with a verbosity of 1 for just the host name to indicate
-# that they have been regathered, and 3 for a more complete display.
-vm_debug_variables: true

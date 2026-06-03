@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: MIT
+---
+# Sub-playbook to do the actual destruction and reversion of a virtual
+# machine. It is expected that this file will not be called directly, and that
+# pre-tasks.yml will wrap it with the
+
+- name: Destroy VM
+  community.libvirt.virt:
+    name: "{{ inventory_hostname }}"
+    state: destroyed
+  delegate_to: "{{ vmhost }}"
+
+- name: Revert VM from snapshot {{ vm_revert_snapshot }}
+  ansible.builtin.command: "virsh snapshot-revert {{ inventory_hostname }} --snapshotname '{{ vm_revert_snapshot }}'"
+  delegate_to: "{{ vmhost }}"
+  register: snapshot
+  changed_when: changed
+
+- name: Debug snapshot
+  ansible.builtin.debug:
+    msg: "{{ snapshot | to_nice_yaml }}"
+
+- name: Restart VM
+  community.libvirt.virt:
+    name: "{{ inventory_hostname }}"
+    state: running
+  delegate_to: "{{ vmhost }}"
+  register: results
+
+- name: Debug results
+  ansible.builtin.debug:
+    msg: "{{ results }}"
+
+- name: Wait for reboot to complete
+  ansible.builtin.wait_for_connection:
+    delay: "{{ vm_wait_delay }}"
+    timeout: "{{ vm_wait_timeout }}"

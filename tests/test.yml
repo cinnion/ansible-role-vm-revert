@@ -1,6 +1,7 @@
-#SPDX-License-Identifier: MIT-0
+# SPDX-License-Identifier: MIT
 ---
-- hosts: localhost
+- name: Test rollback
+  hosts: beta2
   remote_user: root
   roles:
-    - template-role
+    - cinnion.vm_revert
