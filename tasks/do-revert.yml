@@ -14,7 +14,7 @@
   ansible.builtin.command: "virsh snapshot-revert {{ inventory_hostname }} --snapshotname '{{ vm_revert_snapshot }}'"
   delegate_to: "{{ vmhost }}"
   register: snapshot
-  changed_when: changed
+  changed_when: snapshot.changed
 
 - name: Debug snapshot
   ansible.builtin.debug:
